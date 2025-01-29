@@ -1,0 +1,33 @@
+[project]
+name = "entari-plugin-browser"
+version = "0.1.0"
+description = "Browser API service for Entari using Playwright"
+authors = [
+    {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
+]
+dependencies = [
+    "graiax-playwright>=0.4.4",
+    "graiax-text2img-playwright>=0.5.0",
+    "arclet-entari>=0.12.1",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "arclet-entari[reload,yaml]>=0.12.1",
+]
+
+[tool.pyright]
+pythonVersion = "3.10"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
