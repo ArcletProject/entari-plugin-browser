@@ -9,8 +9,6 @@ from playwright._impl._api_structures import (
     ProxySettings,
     ViewportSize,
 )
-from graiax.text2img.playwright import HTMLRenderer, MarkdownConverter, PageOption, ScreenshotOption, convert_text, convert_md
-from graiax.text2img.playwright.renderer import BuiltinCSS
 
 from .service import PlaywrightService as PlaywrightService
 
@@ -87,6 +85,10 @@ _config = plugin.get_config(Config)
 playwright_api = plugin.add_service(PlaywrightService(**vars(_config)))
 
 
+from graiax.text2img.playwright import HTMLRenderer, MarkdownConverter, PageOption, ScreenshotOption, convert_text, convert_md
+from graiax.text2img.playwright.renderer import BuiltinCSS
+
+
 _html_render = HTMLRenderer(
     page_option=PageOption(device_scale_factor=1.5),
     screenshot_option=ScreenshotOption(type="jpeg", quality=80, full_page=True, scale="device"),
@@ -103,23 +105,25 @@ _html_render = HTMLRenderer(
 _md_converter = MarkdownConverter()
 
 
-async def text2img(text: str, width: int = 800) -> bytes:
+async def text2img(text: str, width: int = 800, screenshot_option: ScreenshotOption | None = None) -> bytes:
     """内置的文本转图片方法，输出格式为jpeg"""
     html = convert_text(text)
 
     return await _html_render.render(
         html,
         extra_page_option=PageOption(viewport={"width": width, "height": 10}),
+        extra_screenshot_option=screenshot_option,
     )
 
 
-async def md2img(text: str, width: int = 800) -> bytes:
+async def md2img(text: str, width: int = 800, screenshot_option: ScreenshotOption | None = None) -> bytes:
     """内置的Markdown转图片方法，输出格式为jpeg"""
     html = _md_converter.convert(text)
 
     return await _html_render.render(
         html,
         extra_page_option=PageOption(viewport={"width": width, "height": 10}),
+        extra_screenshot_option=screenshot_option,
     )
 
 
