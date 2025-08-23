@@ -1,6 +1,6 @@
 [project]
 name = "entari-plugin-browser"
-version = "0.2.0"
+version = "0.2.1"
 description = "Browser API service for Entari using Playwright"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
