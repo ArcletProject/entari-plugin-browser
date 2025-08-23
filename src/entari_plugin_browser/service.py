@@ -37,7 +37,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         **kwargs: 详见 <https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch>
     """
 
-    id = "web.render/graiax.playwright"
+    id = "web.render/playwright"
     playwright: Playwright
     auto_download_browser: bool
     playwright_download_host: str | None

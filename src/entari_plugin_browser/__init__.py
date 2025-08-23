@@ -9,8 +9,10 @@ from playwright._impl._api_structures import (
     ProxySettings,
     ViewportSize,
 )
+from graiax.text2img.playwright import HTMLRenderer, MarkdownConverter, PageOption, ScreenshotOption, convert_text, convert_md
+from graiax.text2img.playwright.renderer import BuiltinCSS
 
-from .service import PlaywrightService
+from .service import PlaywrightService as PlaywrightService
 
 
 class Config(BasicConfModel):
@@ -72,7 +74,7 @@ __version__ = "0.1.0"
 
 plugin.metadata(
     "Browser 服务",
-    ["RF-Tar-Railt <rf_tar_railt@qq.com>"],
+    [{"name": "RF-Tar-Railt", "email": "rf_tar_railt@qq.com"}],
     __version__,
     description="通用的浏览器服务，可用于网页截图和图片渲染等。使用 Playwright",
     urls={
@@ -84,8 +86,6 @@ plugin.metadata(
 _config = plugin.get_config(Config)
 playwright_api = plugin.add_service(PlaywrightService(**vars(_config)))
 
-from graiax.text2img.playwright import HTMLRenderer, MarkdownConverter, PageOption, ScreenshotOption, convert_text, convert_md
-from graiax.text2img.playwright.renderer import BuiltinCSS
 
 _html_render = HTMLRenderer(
     page_option=PageOption(device_scale_factor=1.5),
@@ -124,6 +124,7 @@ async def md2img(text: str, width: int = 800) -> bytes:
 
 
 __all__ = [
+    "PlaywrightService",
     "BuiltinCSS",
     "HTMLRenderer",
     "MarkdownConverter",
