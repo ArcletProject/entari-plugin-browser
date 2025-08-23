@@ -70,7 +70,7 @@ class Config(BasicConfModel):
     record_har_content: Literal["attach", "embed", "omit"] | None = None
 
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 plugin.metadata(
     "Browser 服务",
