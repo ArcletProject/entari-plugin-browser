@@ -8,7 +8,7 @@ from playwright._impl._api_structures import (
     HttpCredentials,
     ProxySettings,
     StorageState,
-    ViewportSize,
+    ViewportSize, ClientCertificate,
 )
 from playwright. async_api._context_manager import PlaywrightContextManager
 from playwright.async_api import Error as PWError, BrowserType
@@ -38,6 +38,7 @@ BROWSER_CHANNEL_TYPES = [
     "firefox",
     "webkit",
 ]
+browser_context_config_list.append("client_certificates")
 
 
 class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInterface):
@@ -69,10 +70,62 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         self,
         browser_type: Literal["chromium", "firefox", "webkit"] = "chromium",
         *,
+        user_data_dir: None = None,
+        connect_endpoint: str,
+        connect_cdp: bool = True,
+        connect_headers: dict[str, str] | None = None,
+        connect_use_default_context: bool = True,
+        expose_network: str | None = None,
+        timeout: float | None = None,
+        slow_mo: float | None = None,
+        viewport: ViewportSize | None = None,
+        screen: ViewportSize | None = None,
+        no_viewport: bool | None = None,
+        ignore_https_errors: bool | None = None,
+        java_script_enabled: bool | None = None,
+        bypass_csp: bool | None = None,
+        user_agent: str | None = None,
+        locale: str | None = None,
+        timezone_id: str | None = None,
+        geolocation: Geolocation | None = None,
+        permissions: list[str] | None = None,
+        extra_http_headers: dict[str, str] | None = None,
+        offline: bool | None = None,
+        http_credentials: HttpCredentials | None = None,
+        device_scale_factor: float | None = None,
+        is_mobile: bool | None = None,
+        has_touch: bool | None = None,
+        color_scheme: Literal["dark", "light", "no-preference", "null"] | None = None,
+        reduced_motion: Literal["no-preference", "null", "reduce"] | None = None,
+        forced_colors: Literal["active", "none", "null"] | None = None,
+        accept_downloads: bool | None = None,
+        default_browser_type: str | None = None,
+        proxy: ProxySettings | None = None,
+        record_har_path: str | Path | None = None,
+        record_har_omit_content: bool | None = None,
+        record_video_dir: str | Path | None = None,
+        record_video_size: ViewportSize | None = None,
+        storage_state: StorageState | str | Path | None = None,
+        base_url: str | None = None,
+        strict_selectors: bool | None = None,
+        service_workers: Literal["allow", "block"] | None = None,
+        record_har_url_filter: str | Pattern[str] | None = None,
+        record_har_mode: Literal["full", "minimal"] | None = None,
+        record_har_content: Literal["attach", "embed", "omit"] | None = None,
+        client_certificates: list[ClientCertificate] | None = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        browser_type: Literal["chromium", "firefox", "webkit"] = "chromium",
+        *,
         auto_download_browser: bool = True,
         playwright_download_host: str | None = None,
         install_with_deps: bool = False,
         user_data_dir: None = None,
+        connect_endpoint: None = None,
         executable_path: str | Path | None = None,
         channel: str | None = None,
         args: list[str] | None = None,
@@ -123,6 +176,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         record_har_url_filter: str | Pattern[str] | None = None,
         record_har_mode: Literal["full", "minimal"] | None = None,
         record_har_content: Literal["attach", "embed", "omit"] | None = None,
+        client_certificates: list[ClientCertificate] | None = None,
     ):
         ...
 
@@ -135,6 +189,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         playwright_download_host: str | None = None,
         install_with_deps: bool = False,
         user_data_dir: str | Path,
+        connect_endpoint: None = None,
         channel: str | None = None,
         executable_path: str | Path | None = None,
         args: list[str] | None = None,
@@ -182,6 +237,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         record_har_url_filter: str | Pattern[str] | None = None,
         record_har_mode: Literal["full", "minimal"] | None = None,
         record_har_content: Literal["attach", "embed", "omit"] | None = None,
+        client_certificates: list[ClientCertificate] | None = None,
     ):
         ...
 
@@ -198,14 +254,46 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         self.auto_download_browser = auto_download_browser
         self.playwright_download_host = playwright_download_host
         self.install_with_deps = install_with_deps
+        self.use_persistent_context = False
+        self.use_connect = False
+        self.use_connect_cdp = False
+        self.cdp_use_default_context = False
 
-        if "user_data_dir" in kwargs and kwargs["user_data_dir"] is not None:
+        if "connect_endpoint" in kwargs and kwargs["connect_endpoint"] is not None:
+            if "connect_cdp" in kwargs and kwargs["connect_cdp"]:
+                assert self.browser_type == "chromium", "connect_cdp mode only supports chromium"
+                self.use_connect_cdp = True
+            else:
+                self.use_connect = True
+        elif "user_data_dir" in kwargs and kwargs["user_data_dir"] is not None:
             self.use_persistent_context = True
 
         if "channel" in kwargs and kwargs["channel"] is not None:
             assert kwargs["channel"] in BROWSER_CHANNEL_TYPES, "channel must be one of " + ", ".join(BROWSER_CHANNEL_TYPES)
 
-        if self.use_persistent_context:
+        if self.use_connect:
+            self.launch_config = {
+                "ws_endpoint": kwargs.pop("connect_endpoint"),
+                "timeout": kwargs.pop("timeout", None),
+                "slow_mo": kwargs.pop("slow_mo", None),
+                "headers": kwargs.pop("connect_headers", None),
+                "expose_network": kwargs.pop("expose_network", None),
+            }
+            for k, v in kwargs.items():
+                if k in browser_context_config_list:
+                    self.global_context_config[k] = v
+        elif self.use_connect_cdp:
+            self.cdp_use_default_context = kwargs.pop("connect_use_default_context", True)
+            self.launch_config = {
+                "endpoint_url": kwargs.pop("connect_endpoint"),
+                "timeout": kwargs.pop("timeout", None),
+                "slow_mo": kwargs.pop("slow_mo", None),
+                "headers": kwargs.pop("connect_headers", None),
+            }
+            for k, v in kwargs.items():
+                if k in browser_context_config_list:
+                    self.global_context_config[k] = v
+        elif self.use_persistent_context:
             self.launch_config = kwargs
         else:
             for k, v in kwargs.items():
@@ -225,7 +313,18 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         return {"preparing", "blocking", "cleanup"}
 
     async def _setup(self, browser_type: BrowserType):
-        if self.use_persistent_context:
+        if self.use_connect:
+            log("info", N_("Playwright is currently starting in connect mode."))
+            self._browser = await browser_type.connect(**self.launch_config)
+            self._context = await self._browser.new_context(**self.global_context_config)
+        elif self.use_connect_cdp:
+            log("info", N_("Playwright is currently starting in connect_cdp mode."))
+            self._browser = await browser_type.connect_over_cdp(**self.launch_config)
+            if self.cdp_use_default_context:
+                self._context = self._browser.contexts[0]
+            else:
+                self._context = await self._browser.new_context(**self.global_context_config)
+        elif self.use_persistent_context:
             log("info", N_("Playwright is currently starting in persistent context mode."))
             self._context = await browser_type.launch_persistent_context(**self.launch_config)
         else:
