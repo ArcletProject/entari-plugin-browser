@@ -19,7 +19,7 @@ class Config(BasicConfModel):
     playwright_download_host: str | None = None
     install_with_deps: bool = False
     user_data_dir: str | Path | None = None
-    channel: str | None = None
+    channel: Literal["chromium", "chrome", "chrome-beta", "chrome-dev", "chrome-canary", "msedge", "msedge-beta", "msedge-dev", "msedge-canary", "firefox", "webkit"] | None = None
     executable_path: str | Path | None = None
     args: list[str] | None = None
     ignore_default_args: bool | list[str] | None = None

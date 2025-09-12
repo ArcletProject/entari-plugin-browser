@@ -10,16 +10,34 @@ from playwright._impl._api_structures import (
     StorageState,
     ViewportSize,
 )
-from playwright.async_api import Error as PWError
+from playwright. async_api._context_manager import PlaywrightContextManager
+from playwright.async_api import Error as PWError, BrowserType
 from playwright.async_api import Playwright, async_playwright
 from typing_extensions import ParamSpec
 
 from graiax.playwright.service import PlaywrightPageInterface, PlaywrightContextInterface
 from graiax.playwright.i18n import N_
-from graiax.playwright.installer import install_playwright
-from graiax.playwright.utils import brower_config_list, browser_context_config_list, log
+from graiax.playwright.utils import brower_config_list, browser_context_config_list
+
+from .installer import install_playwright
+from .installer import log
 
 P = ParamSpec("P")
+
+
+BROWSER_CHANNEL_TYPES = [
+    "chromium",
+    "chrome",
+    "chrome-beta",
+    "chrome-dev",
+    "chrome-canary",
+    "msedge",
+    "msedge-beta",
+    "msedge-dev",
+    "msedge-canary",
+    "firefox",
+    "webkit",
+]
 
 
 class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInterface):
@@ -38,6 +56,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
     """
 
     id = "web.render/playwright"
+    playwright_mgr: PlaywrightContextManager
     playwright: Playwright
     auto_download_browser: bool
     playwright_download_host: str | None
@@ -183,6 +202,9 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         if "user_data_dir" in kwargs and kwargs["user_data_dir"] is not None:
             self.use_persistent_context = True
 
+        if "channel" in kwargs and kwargs["channel"] is not None:
+            assert kwargs["channel"] in BROWSER_CHANNEL_TYPES, "channel must be one of " + ", ".join(BROWSER_CHANNEL_TYPES)
+
         if self.use_persistent_context:
             self.launch_config = kwargs
         else:
@@ -202,6 +224,14 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
     def stages(self):
         return {"preparing", "blocking", "cleanup"}
 
+    async def _setup(self, browser_type: BrowserType):
+        if self.use_persistent_context:
+            log("info", N_("Playwright is currently starting in persistent context mode."))
+            self._context = await browser_type.launch_persistent_context(**self.launch_config)
+        else:
+            self._browser = await browser_type.launch(**self.launch_config)
+            self._context = await self._browser.new_context(**self.global_context_config)
+
     async def launch(self, m: Launart):
         if self.auto_download_browser:
             await install_playwright(
@@ -210,7 +240,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
                 self.install_with_deps,
             )
 
-        playwright_mgr = async_playwright()
+        self.playwright_mgr = playwright_mgr = async_playwright()
 
         async with self.stage("preparing"):
             self.playwright = await playwright_mgr.__aenter__()
@@ -219,27 +249,49 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
                 "firefox": self.playwright.firefox,
                 "webkit": self.playwright.webkit,
             }[self.browser_type]
+            need_install = False
             try:
-                if self.use_persistent_context:
-                    log("info", N_("Playwright is currently starting in persistent context mode."))
-                    self._context = await browser_type.launch_persistent_context(**self.launch_config)
+                await self._setup(browser_type)
+            except PWError as e:
+                if "Executable doesn't exist" in str(e):
+                    need_install = True
                 else:
-                    self._browser = await browser_type.launch(**self.launch_config)
-                    self._context = await self._browser.new_context(**self.global_context_config)
-            except PWError:
-                log(
-                    "error",
-                    N_(
-                        "Unable to launch Playwright for {browser_type}, "
-                        "please check the log output for the reason of failure. "
-                        "It is possible that some system dependencies are missing. "
-                        "You can set [magenta]`install_with_deps`[/] to [magenta]`True`[/] "
-                        "to install dependencies when download browser."
-                    ).format(browser_type=self.browser_type),
-                )
-                raise
+                    log(
+                        "error",
+                        N_(
+                            "Unable to launch Playwright for {browser_type}, "
+                            "please check the log output for the reason of failure. "
+                            "It is possible that some system dependencies are missing. "
+                            "You can set [magenta]`install_with_deps`[/] to [magenta]`True`[/] "
+                            "to install dependencies when download browser."
+                        ).format(browser_type=self.browser_type),
+                    )
+                    raise
             else:
                 log("success", N_("Playwright for {browser_type} is started.").format(browser_type=self.browser_type))
+
+            if need_install:
+                await install_playwright(
+                    self.playwright_download_host,
+                    self.browser_type,
+                    self.install_with_deps,
+                )
+                try:
+                    await self._setup(browser_type)
+                except PWError:
+                    log(
+                        "error",
+                        N_(
+                            "Unable to launch Playwright for {browser_type}, "
+                            "please check the log output for the reason of failure. "
+                            "It is possible that some system dependencies are missing. "
+                            "You can set [magenta]`install_with_deps`[/] to [magenta]`True`[/] "
+                            "to install dependencies when download browser."
+                        ).format(browser_type=self.browser_type),
+                    )
+                    raise
+                else:
+                    log("success", N_("Playwright for {browser_type} is started.").format(browser_type=self.browser_type))
 
         async with self.stage("blocking"):
             await m.status.wait_for_sigexit()
@@ -247,6 +299,32 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         async with self.stage("cleanup"):
             # await self.context.close()  # 这里会卡住
             await playwright_mgr.__aexit__()
+
+    async def restart(self):
+        """重启 Playwright 浏览器"""
+        await self.playwright_mgr.__aexit__()
+        self.playwright = await self.playwright_mgr.__aenter__()
+        browser_type = {
+            "chromium": self.playwright.chromium,
+            "firefox": self.playwright.firefox,
+            "webkit": self.playwright.webkit,
+        }[self.browser_type]
+        try:
+            await self._setup(browser_type)
+        except PWError:
+            log(
+                "error",
+                N_(
+                    "Unable to launch Playwright for {browser_type}, "
+                    "please check the log output for the reason of failure. "
+                    "It is possible that some system dependencies are missing. "
+                    "You can set [magenta]`install_with_deps`[/] to [magenta]`True`[/] "
+                    "to install dependencies when download browser."
+                ).format(browser_type=self.browser_type),
+            )
+            raise
+        else:
+            log("success", N_("Playwright for {browser_type} is restarted.").format(browser_type=self.browser_type))
 
 
 # Patch
