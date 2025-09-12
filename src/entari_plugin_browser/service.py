@@ -339,10 +339,10 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
                 self.install_with_deps,
             )
 
-        self.playwright_mgr = playwright_mgr = async_playwright()
+        self.playwright_mgr = async_playwright()
 
         async with self.stage("preparing"):
-            self.playwright = await playwright_mgr.__aenter__()
+            self.playwright = await self.playwright_mgr.__aenter__()
             browser_type = {
                 "chromium": self.playwright.chromium,
                 "firefox": self.playwright.firefox,
@@ -397,7 +397,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
 
         async with self.stage("cleanup"):
             # await self.context.close()  # 这里会卡住
-            await playwright_mgr.__aexit__()
+            await self.playwright_mgr.__aexit__()
 
     async def restart(self):
         """重启 Playwright 浏览器"""
