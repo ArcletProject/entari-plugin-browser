@@ -1,6 +1,4 @@
-from arclet.entari import plugin, listen
-from arclet.entari.config import config_model_validate
-from arclet.entari.event.config import ConfigReload
+from arclet.entari import plugin
 
 from .service import PlaywrightService as PlaywrightService
 from .config import BrowserConfig
@@ -18,7 +16,7 @@ plugin.metadata(
     },
     config=BrowserConfig,
 )
-plugin.declare_static()
+
 _config = plugin.get_config(BrowserConfig)
 playwright_api = plugin.add_service(PlaywrightService(**vars(_config)))
 
@@ -63,20 +61,6 @@ async def md2img(text: str, width: int = 800, screenshot_option: ScreenshotOptio
         extra_page_option=PageOption(viewport={"width": width, "height": 10}),
         extra_screenshot_option=screenshot_option,
     )
-
-
-@listen(ConfigReload)
-async def restart(event: ConfigReload):
-    if event.scope != "plugin":
-        return None
-    if event.key not in ("browser", "entari_plugin_browser"):
-        return None
-    new_conf = config_model_validate(BrowserConfig, event.value)
-    status = playwright_api.status
-    playwright_api.__init__(**vars(new_conf))
-    playwright_api.status = status
-    await playwright_api.restart()
-    return True
 
 
 __all__ = [
