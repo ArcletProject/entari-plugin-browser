@@ -15,30 +15,14 @@ from playwright.async_api import Error as PWError, BrowserType
 from playwright.async_api import Playwright, async_playwright
 from typing_extensions import ParamSpec
 
-from graiax.playwright.service import PlaywrightPageInterface, PlaywrightContextInterface
+from graiax.playwright.service import PlaywrightPageInterface, PlaywrightContextInterface, BROWSER_CHANNEL_TYPES
 from graiax.playwright.i18n import N_
-from graiax.playwright.utils import brower_config_list, browser_context_config_list
+from graiax.playwright.utils import BROWSER_CONFIG_LIST, BROWSER_CONTEXT_CONFIG_LIST
 
 from .installer import install_playwright
 from .installer import log
 
 P = ParamSpec("P")
-
-
-BROWSER_CHANNEL_TYPES = [
-    "chromium",
-    "chrome",
-    "chrome-beta",
-    "chrome-dev",
-    "chrome-canary",
-    "msedge",
-    "msedge-beta",
-    "msedge-dev",
-    "msedge-canary",
-    "firefox",
-    "webkit",
-]
-browser_context_config_list.append("client_certificates")
 
 
 class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInterface):
@@ -280,7 +264,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
                 "expose_network": kwargs.pop("expose_network", None),
             }
             for k, v in kwargs.items():
-                if k in browser_context_config_list:
+                if k in BROWSER_CONTEXT_CONFIG_LIST:
                     self.global_context_config[k] = v
         elif self.use_connect_cdp:
             self.cdp_use_default_context = kwargs.pop("connect_use_default_context", True)
@@ -291,15 +275,15 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
                 "headers": kwargs.pop("connect_headers", None),
             }
             for k, v in kwargs.items():
-                if k in browser_context_config_list:
+                if k in BROWSER_CONTEXT_CONFIG_LIST:
                     self.global_context_config[k] = v
         elif self.use_persistent_context:
             self.launch_config = kwargs
         else:
             for k, v in kwargs.items():
-                if k in brower_config_list:
+                if k in BROWSER_CONFIG_LIST:
                     self.launch_config[k] = v
-                if k in browser_context_config_list:
+                if k in BROWSER_CONTEXT_CONFIG_LIST:
                     self.global_context_config[k] = v
 
         super().__init__()
