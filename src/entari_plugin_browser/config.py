@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, TypedDict
 from pathlib import Path
 
 from arclet.entari import BasicConfModel
@@ -7,8 +7,15 @@ from playwright._impl._api_structures import (
     HttpCredentials,
     ProxySettings,
     ViewportSize,
-    ClientCertificate,
 )
+
+
+class ClientCertificate(TypedDict, total=False):
+    origin: str
+    certPath: str | Path | None
+    keyPath: str | Path | None
+    pfxPath: str | Path | None
+    passphrase: str | None
 
 
 class BrowserConfig(BasicConfModel):
@@ -23,8 +30,7 @@ class BrowserConfig(BasicConfModel):
     user_data_dir: str | Path | None = None
     """开启持久化上下文时使用的用户数据目录，默认为 None，即不使用持久化上下文。"""
     # 浏览器启动参数
-    channel: Literal[
-                 "chromium", "chrome", "chrome-beta", "chrome-dev", "chrome-canary", "msedge", "msedge-beta", "msedge-dev", "msedge-canary", "firefox", "webkit"] | None = None
+    channel: Literal["chromium", "chrome", "chrome-beta", "chrome-dev", "chrome-canary", "msedge", "msedge-beta", "msedge-dev", "msedge-canary", "firefox", "webkit"] | None = None
     """指定本地现有的浏览器发行版，默认为 None。注意其应该与 browser_type 匹配。"""
     executable_path: str | Path | None = None
     """指定本地现有的浏览器可执行文件路径，默认为 None。"""

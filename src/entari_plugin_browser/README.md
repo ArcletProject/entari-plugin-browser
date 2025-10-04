@@ -69,3 +69,31 @@ async def function():
         extra_screenshot_option=ScreenshotOption(type="jpeg", quality=80, scale="device"),
     )
 ```
+
+## 模板转图片（可选依赖 jinja2）
+
+如需将 Jinja2 模板渲染为 HTML 并输出图片，安装可选依赖：
+
+```bash
+pip install "entari-plugin-browser[jinja2]"
+```
+
+示例：
+
+```python
+from entari_plugin_browser import template2img
+
+
+async def main():
+    text_list = ["1", "2", "3", "4"]
+    template_path = "path/to/templates"
+    template_name = "example.html"
+    
+    img: bytes = await template2img(
+        template_path=template_path,
+        template_name=template_name,
+        templates={"text_list": text_list},
+    )
+```
+
+说明：默认启用 HTML 自动转义，如需插入已转义 HTML，请在模板中使用 `|safe` 过滤器。
