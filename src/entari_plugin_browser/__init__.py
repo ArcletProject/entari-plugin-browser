@@ -8,7 +8,7 @@ from .config import BrowserConfig
 from .utils import logger
 
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 plugin.metadata(
     "Browser 服务",
@@ -117,7 +117,7 @@ async def template2html(
         import jinja2
     except ImportError:
         raise ImportError(
-            "template_to_html 需要可选依赖 jinja2，请安装: pip install 'entari-plugin-browser[jinja]'"
+            "template_to_html 需要可选依赖 jinja2，请安装: pip install 'entari-plugin-browser[jinja2]'"
         ) from None
 
     template_env = jinja2.Environment(

@@ -1,6 +1,6 @@
 [project]
 name = "entari-plugin-browser"
-version = "0.4.0"
+version = "0.5.0"
 description = "Browser API service for Entari using Playwright"
 authors = [
     {name = "RF-Tar-Railt", email = "rf_tar_railt@qq.com"},
@@ -17,6 +17,9 @@ license = {text = "MIT"}
 
 [project.optional-dependencies]
 jinja = [
+    "jinja2>=3.1.6",
+]
+jinja2 = [
     "jinja2>=3.1.6",
 ]
 [build-system]
