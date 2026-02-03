@@ -9,5 +9,5 @@ disp = plugin.dispatch(MessageCreatedEvent)
 @plugin.model.inject("web.render/playwright")
 async def _(sess: Session):
     await sess.send(
-        [Image.of(raw=await md2img(sess.content, screenshot_option=ScreenshotOption(timeout=6000)), mime="image/jpeg")]
+        [Image.of(raw=await md2img(sess.content, screenshot_option={"type": "png"}), mime="image/jpeg")]
     )
