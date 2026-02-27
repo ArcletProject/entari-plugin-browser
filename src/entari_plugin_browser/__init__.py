@@ -8,7 +8,7 @@ from .config import BrowserConfig
 from .utils import logger
 
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 plugin.metadata(
     "Browser 服务",
