@@ -56,8 +56,6 @@ class BrowserConfig(BasicConfModel):
     """要传递给浏览器进程的环境变量。"""
     headless: bool | None = None
     """是否以无头模式运行浏览器。默认为 None，即使用 Playwright 的默认值 True。"""
-    devtools: bool | None = None
-    """是否为 Chromium 浏览器打开 DevTools 窗口。默认为 None，即使用 Playwright 的默认值 False。"""
     proxy: ProxySettings | None = None
     """代理设置，默认为 None，即不使用代理。"""
     downloads_path: str | Path | None = None
