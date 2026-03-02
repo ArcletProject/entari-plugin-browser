@@ -8,7 +8,7 @@ from .config import BrowserConfig
 from .utils import logger
 
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 plugin.metadata(
     "Browser 服务",
@@ -19,6 +19,7 @@ plugin.metadata(
         "homepage": "https://github.com/ArcletProject/entari-plugin-browser",
     },
     config=BrowserConfig,
+    readme="README.md",
 )
 
 _config = plugin.get_config(BrowserConfig)
