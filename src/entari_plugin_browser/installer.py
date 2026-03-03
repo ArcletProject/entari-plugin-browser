@@ -33,6 +33,7 @@ class MirrorSource:
 MIRRORS = [
     MirrorSource("Default", "https://playwright.azureedge.net", 1),
     MirrorSource("Taobao", "https://registry.npmmirror.com/-/binary/playwright", 2),
+    MirrorSource("CDN", "https://cdn.playwright.dev/chrome-for-testing-public", 3),
 ]
 
 
@@ -156,11 +157,28 @@ async def check_mirror_connectivity(timeout: int = 5) -> MirrorSource | None:
 
 async def install_playwright(
     download_host: str | None = None,
+    download_proxy: str | None = None,
     browser_type: str = "chromium",
     install_with_deps: bool = False,
 ):
     env = get_driver_env()
     env["PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT"] = "300000"
+    if download_proxy:
+        proxy_scheme = urlparse(download_proxy).scheme.lower()
+        if proxy_scheme == "http":
+            if "HTTP_PROXY" not in env:
+                log("info", f"Using http Proxy: {download_proxy}")
+                env["HTTP_PROXY"] = download_proxy
+        elif proxy_scheme == "https":
+            if "HTTPS_PROXY" not in env:
+                log("info", f"Using https Proxy: {download_proxy}")
+                env["HTTPS_PROXY"] = download_proxy
+        else:
+            if "HTTP_PROXY" not in env:
+                log("info", f"Using Proxy: {download_proxy}")
+                env["HTTP_PROXY"] = download_proxy
+            if "HTTPS_PROXY" not in env:
+                env["HTTPS_PROXY"] = download_proxy
     if download_host:
         env["PLAYWRIGHT_DOWNLOAD_HOST"] = download_host
     elif best_mirror := await check_mirror_connectivity():
@@ -220,7 +238,7 @@ async def install_playwright(
         log(
             "error",
             N_(
-                "Run [magenta]poetry run playwright install[/] or "
+                "Run [magenta]uv run playwright install[/] or "
                 "[magenta]pdm run playwright install[/] to install Playwright manually."
             ),
         )

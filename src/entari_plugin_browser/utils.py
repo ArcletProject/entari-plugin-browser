@@ -1,10 +1,12 @@
 from arclet.entari.logger import log as log_m
+from arclet.entari.logger import escape_tag
 
 
 logger = log_m.wrapper("[Browser]")
 
 
 def log(level: str, rich_text: str) -> None:
+    rich_text = escape_tag(rich_text)
     getattr(logger.opt(colors=True), level)(
         rich_text.replace("[", "<").replace("]", ">"),
         alt=rich_text,

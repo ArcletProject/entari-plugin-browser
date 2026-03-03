@@ -25,6 +25,8 @@ class BrowserConfig(BasicConfModel):
     """是否自动下载浏览器，默认为 False。如果你已经有浏览器环境，可以关闭此选项以加快启动速度。"""
     playwright_download_host: str | None = None
     """Playwright 下载源地址，默认为 None。若未设置此项，会尝试使用内置的镜像源。"""
+    playwright_download_proxy: str | None = None
+    """Playwright 下载时使用的代理地址，默认为 None。支持 http:// 或 https:// 代理。"""
     install_with_deps: bool = False
     """安装浏览器时是否一并安装依赖，默认为 False。Linux 系统建议开启此选项。"""
     user_data_dir: str | Path | None = None

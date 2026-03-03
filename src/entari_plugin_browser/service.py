@@ -45,6 +45,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
     playwright: Playwright
     auto_download_browser: bool
     playwright_download_host: str | None
+    playwright_download_proxy: str | None
 
     launch_config: dict[str, Any] = {}  # 持久性上下文模式时储存的是持久性上下文的启动参数
     global_context_config: dict[str, Any] = {}  # 仅供非持久性上下文模式时储存全局上下文配置
@@ -107,6 +108,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         *,
         auto_download_browser: bool = True,
         playwright_download_host: str | None = None,
+        playwright_download_proxy: str | None = None,
         install_with_deps: bool = False,
         user_data_dir: None = None,
         connect_endpoint: None = None,
@@ -170,6 +172,7 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         *,
         auto_download_browser: bool = True,
         playwright_download_host: str | None = None,
+        playwright_download_proxy: str | None = None,
         install_with_deps: bool = False,
         user_data_dir: str | Path,
         connect_endpoint: None = None,
@@ -229,12 +232,14 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
         *,
         auto_download_browser: bool = True,
         playwright_download_host: str | None = None,
+        playwright_download_proxy: str | None = None,
         install_with_deps: bool = False,
         **kwargs,
     ) -> None:
         self.browser_type: Literal["chromium", "firefox", "webkit"] = browser_type
         self.auto_download_browser = auto_download_browser
         self.playwright_download_host = playwright_download_host
+        self.playwright_download_proxy = playwright_download_proxy
         self.install_with_deps = install_with_deps
         self.use_persistent_context = False
         self.use_connect = False
@@ -316,9 +321,10 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
     async def launch(self, m: Launart):
         if self.auto_download_browser:
             await install_playwright(
-                self.playwright_download_host,
-                self.browser_type,
-                self.install_with_deps,
+                download_host=self.playwright_download_host,
+                download_proxy=self.playwright_download_proxy,
+                browser_type=self.browser_type,
+                install_with_deps=self.install_with_deps,
             )
 
         self.playwright_mgr = async_playwright()
@@ -353,9 +359,10 @@ class PlaywrightService(Service, PlaywrightPageInterface, PlaywrightContextInter
 
             if need_install:
                 await install_playwright(
-                    self.playwright_download_host,
-                    self.browser_type,
-                    self.install_with_deps,
+                    download_host=self.playwright_download_host,
+                    download_proxy=self.playwright_download_proxy,
+                    browser_type=self.browser_type,
+                    install_with_deps=self.install_with_deps,
                 )
                 try:
                     await self._setup(browser_type)
